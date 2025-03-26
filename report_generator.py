@@ -108,42 +108,52 @@ def process_file(file_path):
                 horas_extras = "00:00"
                 duracion_real = "No calculable"
 
-                # Cálculo de atrasos
-                if entrada:
-                    # Calcular minutos de atraso
-                    if entrada > time(8, 0):
-                        delta = datetime.combine(datetime.min, entrada) - datetime.combine(datetime.min, time(8, 0))
-                        minutos_atraso = delta.seconds // 60
-                        
-                        # Lógica de salida esperada
-                        if entrada > time(8, 15):
-                            estado = f"{minutos_atraso} min (E/T)"
-                            total_atraso += minutos_atraso #acumular total
-                            salida_esperada = salida_base
-                        else:
-                            salida_esperada = (datetime.combine(datetime.min, salida_base) + 
-                                            timedelta(minutes=minutos_atraso)).time()
-                            
-                            if salida and salida < salida_esperada:
-                                delta_salida = datetime.combine(datetime.min, salida_esperada) - datetime.combine(datetime.min, salida)
-                                total_atraso += (delta_salida.seconds/60)
-                                estado = f"{delta_salida.seconds // 60} min (N/R)"
                 
-                # Cálculo de horas extras (desde salida ESPERADA)
-                if salida and salida > salida_esperada:  # Cambio clave aquí
-                    extras = datetime.combine(datetime.min, salida) - datetime.combine(datetime.min, salida_esperada)
-                    horas = extras.seconds // 3600
-                    minutos = (extras.seconds // 60) % 60
-                    horas_extras = f"{horas:02d}:{minutos:02d}"
+    # Nueva lógica para fines de semana
+                if nombre_dia in ['Sábado', 'Domingo']:
+                    if entrada and salida:
+                        # Calcular duración total como horas extras
+                        tiempo_real = datetime.combine(datetime.min, salida) - datetime.combine(datetime.min, entrada)
+                        horas = tiempo_real.seconds // 3600
+                        minutos = (tiempo_real.seconds // 60) % 60
+                        horas_extras = f"{horas:02d}:{minutos:02d}"
+                        duracion_real = f"{horas:02d}:{minutos:02d}"
+                        estado = "H.E (FDS)"
+                    else:
+                        estado = "Sin registro" if not entrada or not salida else estado
                 else:
-                    horas_extras = "00:00"
-                
-                # Cálculo de duración real
-                if entrada and salida:
-                    tiempo_real = datetime.combine(datetime.min, salida) - datetime.combine(datetime.min, entrada)
-                    horas_total = tiempo_real.seconds // 3600
-                    minutos_total = (tiempo_real.seconds // 60) % 60
-                    duracion_real = f"{horas_total:02d}:{minutos_total:02d}"
+                    # Lógica original para días laborales
+                    if entrada:
+                        if entrada > time(8, 0):
+                            delta = datetime.combine(datetime.min, entrada) - datetime.combine(datetime.min, time(8, 0))
+                            minutos_atraso = delta.seconds // 60
+                            
+                            if entrada > time(8, 15):
+                                estado = f"{minutos_atraso} min (E/T)"
+                                total_atraso += minutos_atraso
+                                salida_esperada = salida_base
+                            else:
+                                salida_esperada = (datetime.combine(datetime.min, salida_base) + 
+                                                timedelta(minutes=minutos_atraso)).time()
+                                
+                                if salida and salida < salida_esperada:
+                                    delta_salida = datetime.combine(datetime.min, salida_esperada) - datetime.combine(datetime.min, salida)
+                                    total_atraso += (delta_salida.seconds/60)
+                                    estado = f"{delta_salida.seconds // 60} min (N/R)"
+                    
+                    # Cálculo de horas extras para días laborales
+                    if salida and salida > salida_esperada:
+                        extras = datetime.combine(datetime.min, salida) - datetime.combine(datetime.min, salida_esperada)
+                        horas = extras.seconds // 3600
+                        minutos = (extras.seconds // 60) % 60
+                        horas_extras = f"{horas:02d}:{minutos:02d}"
+                    
+                    # Cálculo de duración real
+                    if entrada and salida:
+                        tiempo_real = datetime.combine(datetime.min, salida) - datetime.combine(datetime.min, entrada)
+                        horas_total = tiempo_real.seconds // 3600
+                        minutos_total = (tiempo_real.seconds // 60) % 60
+                        duracion_real = f"{horas_total:02d}:{minutos_total:02d}"
 
                 informe.append({
                     'Fecha': fecha_formateada,
