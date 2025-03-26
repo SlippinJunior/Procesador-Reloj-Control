@@ -26,7 +26,7 @@ def parse_time(t):
     except:
         return None
 
-def generar_pdf(informe, nombre, rut, filename):
+def generar_pdf(informe, nombre, rut, filename, total_atraso):
     pdf = PDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -54,6 +54,13 @@ def generar_pdf(informe, nombre, rut, filename):
             pdf.cell(ancho, 10, str(campo), border=1)
         pdf.ln()
     
+    #resumen
+    pdf.set_font('Arial', 'B', 9)
+    # Fila de total
+    pdf.cell(115, 10, "Total de minutos de atraso:", border=1, align='R')
+    pdf.cell(25, 10, str(total_atraso), border=1)
+    pdf.ln()
+
     # Firmas
     pdf.ln(20)
     pdf.set_font('Arial', 'B', 11)
@@ -79,6 +86,8 @@ def process_file(file_path):
             df = df[df['Fecha'].notna()].copy()
 
             informe = []
+
+            total_atraso = 0
 
             for index, row in df.iterrows():
                 fecha = row['Fecha']
@@ -109,6 +118,7 @@ def process_file(file_path):
                         # Lógica de salida esperada
                         if entrada > time(8, 15):
                             estado = f"{minutos_atraso} min (E/T)"
+                            total_atraso += minutos_atraso #acumular total
                             salida_esperada = salida_base
                         else:
                             salida_esperada = (datetime.combine(datetime.min, salida_base) + 
@@ -116,6 +126,7 @@ def process_file(file_path):
                             
                             if salida and salida < salida_esperada:
                                 delta_salida = datetime.combine(datetime.min, salida_esperada) - datetime.combine(datetime.min, salida)
+                                total_atraso += (delta_salida.seconds/60)
                                 estado = f"{delta_salida.seconds // 60} min (N/R)"
                 
                 # Cálculo de horas extras (desde salida ESPERADA)
@@ -149,7 +160,7 @@ def process_file(file_path):
             output_name = f"Informe_{nombre_persona.replace(' ', '_')}.pdf"
             output_path = os.path.join(output_dir, output_name)
             
-            generar_pdf(informe, nombre_persona, rut_persona, output_path)
+            generar_pdf(informe, nombre_persona, rut_persona, output_path, total_atraso)
             
         except Exception as e:
             raise RuntimeError(f"Error procesando archivo: {str(e)}")
