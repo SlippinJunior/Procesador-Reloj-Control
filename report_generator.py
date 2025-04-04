@@ -140,6 +140,14 @@ def process_file(file_path):
                                     delta_salida = datetime.combine(datetime.min, salida_esperada) - datetime.combine(datetime.min, salida)
                                     total_atraso += (delta_salida.seconds/60)
                                     estado = f"{delta_salida.seconds // 60} min (N/R)"
+
+                    # Calcular tiempo no recuperado (sin ajustar salida_esperada)
+                    if salida and salida < salida_esperada:
+                        delta_salida = datetime.combine(datetime.min, salida_esperada) - datetime.combine(datetime.min, salida)
+                        tiempo_no_recuperado = delta_salida.seconds // 60
+                        
+                        total_atraso += tiempo_no_recuperado
+                        estado = f"{tiempo_no_recuperado} min (N/R)" if tiempo_no_recuperado > 0 else "A tiempo"                
                     
                     # Cálculo de horas extras para días laborales
                     if salida and salida > salida_esperada:
